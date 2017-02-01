@@ -1,20 +1,14 @@
-\documentclass[12pt]{article}
+\documentclass[10pt]{article}
+\usepackage{fullpage, amsmath, amsthm, amsfonts}
+\usepackage{natbib}
 
-%------------ Dimensions -------------%
-\usepackage[
-top    = 1in,
-bottom = 1in,
-left   = 1in,
-right  = 1in]{geometry}
+%\usepackage{epsfig}
 
-%-------------- Header and footer customization -----------%
- \usepackage{fancyhdr, adjustbox, setspace, amsmath,multirow,natbib,caption,subcaption, titling, amssymb}
-\pagestyle{fancy}
- \lhead{}
- \chead{}
- \rhead{}
- \lfoot{}
- \rfoot{}
+\newcommand{\Ex}[2]{\mathop{\mathbb{E}}\displaylimits_{#1}\left
+[ #2 \right ]}
+\newcommand{\Expect}[1]{\mathop{\mathbb{E}}\left
+[ #1 \right ]}
+
 
 %---------- Commands ---------------% 
 \newcommand\textbox[1]{\parbox{.5\textwidth}{#1}}
@@ -34,16 +28,21 @@ right  = 1in]{geometry}
 \newcommand{\sumd}{\sum\limits_{d=0}^1}
 \newcommand{\muli}{\Pi_{i=1}^n}
 \newcommand{\mulj}{\Pi_{j=1}^{n_i}}
- \bibliographystyle{plainnat}
+
  \newcommand{\itab}[1]{\hspace{0em}\rlap{#1}}
 \newcommand{\tab}[1]{\hspace{.05\textwidth}\rlap{#1}}
-\bibliographystyle{plainnat}
+
+
 
 
 \begin{document}
-\title{STAT 538 Lecture 7 (Jan 24 2017)}
-\maketitle
+\input{preamble.tex}
 
+\lecture{1}{}{Zaid Harchaoui}{Katherine Tan, Jiacheng Wu}%Replace "Jyn Erso" by your name(s)
+
+
+%%%% body goes in here %%%%
+\section{General framework}
 \noindent Last time, we considered the optimization problem
 
 \[
@@ -59,8 +58,9 @@ right  = 1in]{geometry}
 
 \noindent  \textit{Question} Consider an algorithm $\mathbb{A}$ that $\epsilon$-minimizes $G$ (i.e. minimizes $G$ with rate $O(\frac{1}{\epsilon})$. Can we engineer an algorithm $\mathbb{A^*}$ with rate $O(\frac{1}{\epsilon^2})$ (or in general a faster algorithm)?
 
-\noindent \textit{Answer}: \texttt{Catalyst} algorithm (Lin, Mairal, Harchaoui 2015).\\
+\noindent \textit{Answer}: \texttt{Catalyst} algorithm \citep{lin2015universal}.
 
+\section{Catalyst}
 \noindent The idea of the \texttt{Catalyst} algorithm is based on an auxiliary objective function:
 
 \[
@@ -87,6 +87,9 @@ right  = 1in]{geometry}
 \item If $K <<< 1$, $\tau_G \approx \tau_F$.
 \item If $K$ is large, $G \approx \dfrac{K}{2} ||x-y||_2^2$
 \ei
+
+\item  $\mathbb{A}$ denotes $\epsilon$-minimize $G(x)$ and $\mathbb{A}^*$ denotes the catalyst version
+
 \ei
 
 \noindent \textit{Catalyst} algorithm:\\
@@ -96,22 +99,31 @@ right  = 1in]{geometry}
 \item Initialize $q = \dfrac{\mu}{\mu + K}$, $y_0 = x_0$.
 \item Run iteration $t=1,\hdots$ (until stopping criterion)
 \bi
-\item $x_t = \underset{x}{\epsilon_k argmin} G_k(x) = F(x) + \dfrac{K}{2} ||x-y||_2^2$.
+\item $x_t = \epsilon_k - \underset{x}{\text{argmin}} G_k(x) = F(x) + \dfrac{K}{2} \|x-y_{k-1}\|_2^2$.
 \item $y_t = x_t + \beta_k(x_t - x_{t-1})$.
 \ei
 \noindent where $\beta_t = \dfrac{\alpha_{t-1}(1-\alpha_{t-1})}{\alpha_{t-1}^2 + \alpha_{t}}$, $\alpha_t \in [0,1]$ such that $\alpha_t^2 = (1-\alpha_t)\alpha_{t-1}^2 + q \alpha_t$.
 \ei
 \noindent \textit{OUTPUT} Final estimates $x_t$.\\
 
-\noindent Convergence when $F$ is $\mu$ strongly convex:\\
-\noindent Define $\epsilon_t = C[F(x_0) - F^*](1-\rho)^t$, $\rho < \dfrac{\mu}{\mu + K}$. Then $\mathbb{A}^*$ generates $(x_t)_{t\geq0}$ such that
+\section{Convergence Analysis}
+
+
+\bi
+\item When $F$ is $\mu$ strongly convex:
+\ei
+
+Define $\epsilon_t = C[F(x_0) - F^*](1-\rho)^t$, $\rho < \dfrac{\mu}{\mu + K}$. Then $\mathbb{A}^*$ generates $(x_t)_{t\geq0}$ such that
 
 \[
 F(x_t) - F^* \leq C(1-\rho)^{t+1}(F(x_0) - F^*)
 \]
 
-\noindent  Convergence when $F$ is $\mu$ is convex (but not strongly convex):\\
-\noindent Define $\epsilon_t = C \dfrac{F(x_0) - F^*}{(K+2)^5}$. Then $\mathbb{A}^*$ generates $(x_t)_{t\geq0}$ such that
+\bi
+\item When $F$ is $\mu$ is convex (but not strongly convex):
+\ei
+
+Define $\epsilon_t = C \dfrac{F(x_0) - F^*}{(K+2)^5}$. Then $\mathbb{A}^*$ generates $(x_t)_{t\geq0}$ such that
 
 \[
 F(x_t) - F^* \leq \dfrac{C}{(K+2)^2} \left( C(F(x_0) - F^*) + \dfrac{K}{2} ||x_0 - x^*||_2^2 \right)
@@ -123,5 +135,28 @@ F(x_t) - F^* \leq \dfrac{C}{(K+2)^2} \left( C(F(x_0) - F^*) + \dfrac{K}{2} ||x_0
 \item For an algorithm $\mathbb{A}$ that $\epsilon$ minimizes $G$ with rate $O(\frac{1}{t})$ in terms of number of iterations (i.e. is $O(\frac{1}{\epsilon})$ in terms of accuracy if $\dfrac{LD^2}{t+1} = \epsilon$.
 \item \textit{Catalyst} action for accelerated $\mathbb{A}^*$ results in rate $O(\frac{1}{K^2})$ = $O(\frac{1}{\sqrt{\epsilon}})$
 \ei
+
+
+\section{User-guide Generic Acceleration}
+We going to minimize a smooth function plus a convex function that may not be differentiable. For example, 
+\[
+G(x) = \underbrace{-l(x)}_{\text{logistic loss}} + \underbrace{\lambda_1 \|x\|_1 + \lambda_2 \|x\|_2^2}_{\text{elastic net penalty}}
+\]
+The convergence rate of an accelerated algorithm $\mathbb{A}$ is driven by the parameter $K$. The bet choice is to maximize the following
+\bi
+\item Strongly convex case 
+\[
+\text{Max} \frac{\tau_{A, G_k}}{\sqrt{\mu+K}}
+\]
+
+\item Non-strongly convex case
+\[
+\text{Max} \frac{\tau_{A, G_k}}{\sqrt{L+K}}
+\]
+\ei
+
+
+\bibliographystyle{agsm}
+\bibliography{note}
 
 \end{document}
