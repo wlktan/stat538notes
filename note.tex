@@ -44,29 +44,84 @@ right  = 1in]{geometry}
 \title{STAT 538 Lecture 7 (Jan 24 2017)}
 \maketitle
 
-\noindent Recall problem (strongly convex part and proximal part)
-
-\noindent For the problem 
+\noindent Last time, we considered the optimization problem
 
 \[
-\underset{x \in \mathbb{R}^p}{min} f(x) = \mathbb{f}(x) + \psi(x)\]
+\underset{x \in \mathbb{R}^p}{min} F(x) = f(x) + \psi(x)\]
 
-\noindent where $\mathbb{f}(.)$ is $\mu-$strongly convex and $\psi(.)$ is proximal friendly, for example in Logistic Regression:
+\noindent where $f(.)$ is convex with Lipschitz constant $L$, and $\psi(.)$ is convex but may not be differentiable. Typically, $f(x)$ is a sum of loss functions evaluated at each data point, and $\psi(x)$ serves as a regularizer/penalty. For example, in Logistic Regression:
 
 \[
-\dfrac{1}{n} \sumi log(1 + e^{-y_i x^T a_i}) + \lambda ||x||_1
+\underset{x \in \mathbb{R}^p}{min} \dfrac{1}{n} \sumi log(1 + e^{-y_i x^T a_i}) + \lambda ||x||_1
 \]
 
-\noindent a sum of 
+\noindent where $f(x) = \dfrac{1}{n} \sumi log(1 + e^{-y_i x^T a_i})$, $\psi(x) = \lambda ||x||_1$. These problems can be solved through first-order optimization problems, such as gradient descent and coordinate descent.
 
-\noindent We can solve this
+\noindent  \textit{Question} Consider an algorithm $\mathbb{A}$ that $\epsilon$-minimizes $G$ (i.e. minimizes $G$ with rate $O(\frac{1}{\epsilon})$. Can we engineer an algorithm $\mathbb{A^*}$ with rate $O(\frac{1}{\epsilon^2})$ (or in general a faster algorithm)?
 
-\noindent Question: how can we solve this faster? Answer: Catalyst
+\noindent \textit{Answer}: \texttt{Catalyst} algorithm (Lin, Mairal, Harchaoui 2015).\\
 
-\noindent Example: LASSO problem
+\noindent The idea of the \texttt{Catalyst} algorithm is based on an auxiliary objective function:
 
-\noindent User guide for generic acceleration (different cases to find strongly convex)
+\[
+\underset{x \in \mathbb{R}^p}{min} G(x) = f(x) + \dfrac{K}{2} ||x-y||_2^2\]
 
-\noindent 
+\bi
+\item In convex analysis, this formulation is also known as:
+\bi
+\item Moreau envelope
+\item Moreau-Yosida regularization smoothing
+\ei
+
+\item $K$ is a constant that will be specified later.
+
+
+\item Notes on \textit{condition numbers}:
+\bi
+\item The condition number of $F$ is $\tau_F = \dfrac{\mu}{L}$ (where $\mu$ is the strong convexity parameter and $L$ is the Lipschitz constant).
+\item The condition number of the new function G is $\tau_G = \dfrac{\mu + K}{L + K}$
+\ei
+
+\item Relationships between $K$, condition numbers and objective functions:
+\bi
+\item If $K <<< 1$, $\tau_G \approx \tau_F$.
+\item If $K$ is large, $G \approx \dfrac{K}{2} ||x-y||_2^2$
+\ei
+\ei
+
+\noindent \textit{Catalyst} algorithm:\\
+
+\noindent \textit{INPUT} Initial estimate $x_0 \in \mathbb{R}^p$, parameters $K$ and $\alpha_0$, sequence $\epsilon_t, t \geq 0$.
+\bi
+\item Initialize $q = \dfrac{\mu}{\mu + K}$, $y_0 = x_0$.
+\item Run iteration $t=1,\hdots$ (until stopping criterion)
+\bi
+\item $x_t = \underset{x}{\epsilon_k argmin} G_k(x) = F(x) + \dfrac{K}{2} ||x-y||_2^2$.
+\item $y_t = x_t + \beta_k(x_t - x_{t-1})$.
+\ei
+\noindent where $\beta_t = \dfrac{\alpha_{t-1}(1-\alpha_{t-1})}{\alpha_{t-1}^2 + \alpha_{t}}$, $\alpha_t \in [0,1]$ such that $\alpha_t^2 = (1-\alpha_t)\alpha_{t-1}^2 + q \alpha_t$.
+\ei
+\noindent \textit{OUTPUT} Final estimates $x_t$.\\
+
+\noindent Convergence when $F$ is $\mu$ strongly convex:\\
+\noindent Define $\epsilon_t = C[F(x_0) - F^*](1-\rho)^t$, $\rho < \dfrac{\mu}{\mu + K}$. Then $\mathbb{A}^*$ generates $(x_t)_{t\geq0}$ such that
+
+\[
+F(x_t) - F^* \leq C(1-\rho)^{t+1}(F(x_0) - F^*)
+\]
+
+\noindent  Convergence when $F$ is $\mu$ is convex (but not strongly convex):\\
+\noindent Define $\epsilon_t = C \dfrac{F(x_0) - F^*}{(K+2)^5}$. Then $\mathbb{A}^*$ generates $(x_t)_{t\geq0}$ such that
+
+\[
+F(x_t) - F^* \leq \dfrac{C}{(K+2)^2} \left( C(F(x_0) - F^*) + \dfrac{K}{2} ||x_0 - x^*||_2^2 \right)
+\]
+
+\noindent This means that:
+
+\bi
+\item For an algorithm $\mathbb{A}$ that $\epsilon$ minimizes $G$ with rate $O(\frac{1}{t})$ in terms of number of iterations (i.e. is $O(\frac{1}{\epsilon})$ in terms of accuracy if $\dfrac{LD^2}{t+1} = \epsilon$.
+\item \textit{Catalyst} action for accelerated $\mathbb{A}^*$ results in rate $O(\frac{1}{K^2})$ = $O(\frac{1}{\sqrt{\epsilon}})$
+\ei
 
 \end{document}
